@@ -1,5 +1,5 @@
 """
-Clinical Algorithmic Engine & Guideline Rules for SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent.
+Legacy generic threshold engine (NOT a clinical TLICS/SLIC point calculator).
 Domain: Musculoskeletal Imaging
 Standard: TLICS & Subaxial Spine Injury Scale
 """
@@ -18,8 +18,8 @@ class ClinicalDomainEngine:
         if value > cls.PRIMARY_BASELINE_LIMIT:
             return {
                 "title": "Primary Metric Threshold Exceeded",
-                "finding": f"Observed value ({value:.2f}) exceeds TLICS & Subaxial Spine Injury Scale clinical baseline limit ({cls.PRIMARY_BASELINE_LIMIT:.1f}).",
-                "recommendation": "Perform immediate secondary verification and calibration review.",
+                "finding": f"Observed value ({value:.2f}) exceeds the legacy illustrative threshold ({cls.PRIMARY_BASELINE_LIMIT:.1f}); this is not a TLICS/SLIC clinical cutoff.",
+                "recommendation": "Review input and threshold configuration; do not infer spinal stability.",
             }
         return None
 
@@ -29,7 +29,7 @@ class ClinicalDomainEngine:
             return {
                 "title": "STAT Kinetic Escalation Triggered",
                 "finding": f"Kinetic parameter ({value:.2f}) with STAT={is_stat} requires prioritized supervision.",
-                "recommendation": "Activate closed-loop verbal clinician notification protocol per Joint Commission standards.",
+                "recommendation": "Review this illustrative trigger and follow applicable local escalation protocols.",
             }
         return None
 
@@ -40,6 +40,6 @@ class ClinicalDomainEngine:
             return {
                 "title": "Phenotypic / Biomarker Discordance Identified",
                 "finding": f"Status flag '{status_flag}' indicates divergence from standard diagnostic concordance.",
-                "recommendation": f"Order reflex confirmatory testing per TLICS & Subaxial Spine Injury Scale clinical recommendations.",
+                "recommendation": f"Reconcile discordant legacy descriptor; it is not a TLICS/SLIC score.",
             }
         return None
