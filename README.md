@@ -1,190 +1,113 @@
 # Spine Fracture Stability Agent
 
-> **Domain:** Diagnostic Radiology & Medical Imaging AI
-> **Reference Guidelines:** TLICS (Thoracolumbar Injury Classification and Severity), SLIC (Subaxial Cervical Spine Injury Classification), ACR RADS & Fleischner Society
+Reference-based **TLICS (thoracolumbar)** and **SLIC (subaxial cervical)** point calculators, with a standalone browser interface, Python CLI, and optional FastAPI endpoints.
 
-<div align="center">
+> **Educational / research decision support only.** These scores are not an autonomous diagnosis of spinal stability or a substitute for radiologic interpretation, neurologic examination, or spine-specialist assessment. Do not enter identifiable patient information.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser calculator
 
-</div>
+Open [web/index.html](web/index.html) in a current browser. Select one classification, then injury morphology, ligamentous status and neurologic status. For SLIC, a conditional +1 modifier is available for ongoing cord compression with a neurologic deficit. The page computes the total and component scores and exports a JSON summary.
 
----
+The browser calculation uses **local JavaScript**, does not contact a server, and needs neither Python nor an API key. A GitHub Pages deployment workflow publishes the `web/` directory from `master` when GitHub Pages is enabled. Deployment status must be verified independently; a successful local test does not establish that the public site is live.
 
-## What It Does
+## Scoring and interpretation
 
-**Spine Fracture Stability Agent** is an analytical platform implementing TLICS & Subaxial Cervical Spine Injury Staging. It evaluates thoracolumbar and cervical trauma CTs across three dimensions: morphology, posterior ligamentous complex (PLC) integrity, and neurologic status to support surgical decision-making.
+| Scale | Components | Score bands |
+| --- | --- | --- |
+| TLICS | Fracture morphology (0–4), posterior ligamentous complex (0/2/3), neurologic status (0/2/3) | 0–3 generally favors nonoperative management; 4 equivocal; 5+ generally favors operative evaluation |
+| SLIC | Injury morphology (0–4), discoligamentous complex (0/1/2), neurologic status (0–3), optional ongoing-compression modifier (+1) | Same decision bands |
 
----
+Only the most severe relevant morphology is selected for **each injury level**. Score bands summarize the published frameworks, not treatment orders. They do not account for every clinical factor or classification reliability limitation.
 
-## Key Capabilities
+The **legacy `audit`, `batch`, and `chat` interfaces** remain available for backward compatibility. Their generic numeric thresholds and mock responses **are not TLICS/SLIC calculations and have not been validated for clinical triage**.
 
-### Core Evaluation Engines
+## Installation and CLI
 
-- **MorphologyClassifierAgent** — Evaluates primary metric against clinical baseline thresholds
-- **LigamentousIntegrityAgent** — Assesses secondary kinetics and STAT escalation triggers
-- **TLICSCompositeScorerAgent** — Detects biomarker and phenotypic discordance
-- **SpineCoordinator** — Executive coordinator aggregating multi-agent consensus
-
-### Enterprise Security
-
-- **Zero-PHI Outbound Interceptor:** AST and regex inspection blocking SSNs, MRNs, phone numbers, emails, and patient identifiers
-- **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation
-- **Air-Gapped LLM Reasoning Adapter:** Integration for local Ollama, Claude, OpenAI, and deterministic mocks
-- **Prometheus Telemetry:** Operational metrics exposed at `/metrics`
-
----
-
-## Installation
+Python 3.9+ is required for the Python package. Python 3.10–3.12 are covered in CI.
 
 ```bash
-# Clone repository
 git clone https://github.com/abusuraihsakhri/spine-fracture-stability-agent.git
 cd spine-fracture-stability-agent
-
-# Install dependencies
-pip install fastapi uvicorn pydantic pytest
-
-# Or install as package
-pip install -e .
+python -m pip install -e '.[api,dev]'
 ```
 
----
-
-## Usage
-
-### CLI — Single Case Audit
+Calculate TLICS and SLIC reference scores:
 
 ```bash
-python cli.py audit --task-id CASE-001 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
+python cli.py score --scale TLICS --morphology burst --ligament indeterminate --neurologic intact
+python cli.py score --scale SLIC --morphology distraction --ligament disrupted --neurologic incomplete_cord --ongoing-compression
 ```
 
-### CLI — Batch CSV Processing
+The installed console script `spine-fracture-stability-engine` also supports the `score` subcommand. Input category names are listed in [the scoring source](spine_fracture_stability_agent/scoring.py); invalid categories fail with an error rather than silently receiving a default value.
+
+Legacy commands (generic monitoring only):
 
 ```bash
+python cli.py audit --task-id TEST-01 --target SYNTH-01 --primary 28.5 --secondary 14.2 --critical
 python cli.py batch -i sample.csv -o results.csv
-```
-
-### CLI — Query Supervisor
-
-```bash
-python cli.py chat "What is the system status?"
-```
-
-### CLI — Verify Audit Trail
-
-```bash
 python cli.py verify-audit
+python cli.py chat "system status"
 ```
 
-### REST API Server
+## Optional REST API
 
 ```bash
 python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-### API Endpoints
+API schema is available at `/docs` and `/openapi.json` while the server is running.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/metrics` | Prometheus metrics |
-| POST | `/api/audit` | Submit case for evaluation |
-| POST | `/api/chat` | Query supervisory assistant |
-| GET | `/api/audit/logs` | Retrieve HMAC audit trail |
+| Method | Path | Behavior |
+| --- | --- | --- |
+| POST | `/api/score` | Calculate categorical TLICS/SLIC points, without retaining the scoring request |
+| POST | `/api/audit` | Run the **legacy generic threshold** assessment |
+| POST | `/api/chat` | Deterministic mock response; no external inference |
+| GET | `/health` | Health metadata |
+| GET | `/metrics` | JSON operational counters (not Prometheus exposition format) |
+| GET | `/api/audit/logs` | In-memory audit-chain metadata and integrity result |
 
----
-
-## Input Data Schema
-
-### Audit Payload
-
-| Field | Type | Description | Required |
-|:------|:-----|:------------|:---------|
-| `task_id` | string | Unique case identifier | Yes |
-| `target_identifier` | string | Target or specimen key | Yes |
-| `primary_metric` | float | Primary measurement | Yes |
-| `secondary_metric` | float | Secondary kinetic index | No (default: 0.0) |
-| `status_descriptor` | string | Status code (e.g., NOMINAL, DISCORDANT_ANOMALY) | No (default: NOMINAL) |
-| `is_critical_flag` | boolean | Emergency escalation trigger | No (default: false) |
-
-### CSV Batch Format
-
-```csv
-task_id,target_identifier,primary_metric,secondary_metric,status_descriptor,is_critical_flag
-CASE-001,SYNTH-01,25.4,14.2,DISCORDANT,true
-CASE-002,SYNTH-02,12.0,4.1,NORMAL,false
-```
-
----
-
-## Testing
+Example score request:
 
 ```bash
-# Run full test suite
-pytest -v
-
-# Run with coverage
-pytest -v --cov=agents --cov=spine_stability --cov=enrichment
+curl -s http://127.0.0.1:8000/api/score \
+  -H 'Content-Type: application/json' \
+  -d '{"scale":"TLICS","morphology":"burst","ligament":"indeterminate","neurologic":"intact"}'
 ```
 
----
+## Privacy and security limitations
 
-## Container Deployment
+- Browser scoring occurs locally with no uploads, cookies or persistent storage.
+- Legacy server data and the audit log exist **in process memory**; do not assume durable retention, access control, or regulatory compliance. The legacy API has **no authentication**: keep it bound to a trusted interface or protect it behind an authenticated reverse proxy before deployment.
+- The PHI guard uses pattern matching for *some* common identifiers. It cannot prove data are de-identified or HIPAA compliant. **Use synthetic data only**.
+- Legacy audit entries form a signed HMAC-SHA256 hash chain, and verification recomputes signatures to detect changes to recorded fields. The ledger is not a persistent independent audit service. Set a strong, stable `AUDIT_SECRET_KEY` in server deployments.
+- The `mock` model provider is the only implemented provider. Other names are rejected rather than silently claiming a model was used.
+
+For Docker Compose, export a secret before starting:
 
 ```bash
-docker build -t spine-fracture-stability-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=$(openssl rand -hex 32) spine-fracture-stability-agent
+export AUDIT_SECRET_KEY="$(openssl rand -hex 32)"
+docker compose up --build
 ```
 
-### Docker Compose
+Compose binds `127.0.0.1:8000` by default. Do not expose the legacy API publicly without additional controls.
+
+## Tests and project layout
 
 ```bash
-docker-compose up -d
+python -m pip check
+python -m compileall -q agents spine_fracture_stability_agent cli.py spine_stability.py enrichment.py
+pytest -q
+node tests/browser_ui.test.cjs
 ```
 
----
+Key files: `spine_fracture_stability_agent/scoring.py` (reference scoring), `web/index.html` (browser app), `agents/` (legacy supervisor/API), `spine_stability.py` and `spine_fracture_stability_agent/` (older compatibility workflows), and `tests/` (regression tests).
 
-## Security Configuration
+## References
 
-| Environment Variable | Description | Required |
-|:---------------------|:------------|:---------|
-| `AUDIT_SECRET_KEY` | HMAC-SHA256 signing key for audit trail | No (random key generated if unset) |
-| `MODEL_PROVIDER` | LLM provider: mock, ollama, claude, openai | No (default: mock) |
-
-**Important:** For production deployments, always set `AUDIT_SECRET_KEY` to a cryptographically secure random value. Without it, a random key is generated per process, which prevents audit trail verification across restarts.
-
----
-
-## Architecture
-
-```
-spine-fracture-stability-agent/
-├── agents/                  # Enterprise agent modules
-│   ├── base.py             # PHI guard, HMAC audit, security
-│   ├── models.py           # Pydantic schemas
-│   ├── supervisor.py       # Master orchestrator
-│   ├── workers.py          # Specialized evaluation workers
-│   ├── api.py              # FastAPI REST server
-│   ├── llm_factory.py      # LLM provider factory
-│   ├── learning.py         # Bayesian calibration engine
-│   ├── metrics.py          # Prometheus metrics collector
-│   └── streamer.py         # WebSocket telemetry broadcaster
-├── spine_fracture_stability_agent/  # Alternative package
-├── cli.py                  # CLI entry point
-├── spine_stability.py      # Core evaluation engine
-├── enrichment.py           # Enrichment analytics suite
-├── simulator.py            # High-throughput stress tester
-└── tests/                  # Test suite
-```
-
----
+- [Thoracolumbar Injury Classification and Severity Score (TLICS): framework and scoring table](https://pmc.ncbi.nlm.nih.gov/articles/PMC2779435/)
+- [Subaxial Injury Classification (SLIC): development and point definitions](https://pmc.ncbi.nlm.nih.gov/articles/PMC3032869/)
+- [WFNS Spine Committee recommendations for subaxial cervical spine injuries](https://pmc.ncbi.nlm.nih.gov/articles/PMC7788423/)
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
