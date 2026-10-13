@@ -4,6 +4,7 @@ FastAPI REST API Server for Spine Fracture Stability Agent.
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from spine_fracture_stability_agent.scoring import score_case
 from .base import AuditLogger, PHIGuard
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
@@ -15,6 +16,16 @@ app = FastAPI(
     description="Enterprise Distributed Component Platform (Radiology & Neuroimaging Systems)",
     version="3.0.0-ENTERPRISE",
 )
+
+
+
+class ScoreRequest(BaseModel):
+    scale: str
+    morphology: str
+    ligament: str
+    neurologic: str
+    ongoing_compression: bool = False
+
 
 
 class ChatRequest(BaseModel):
@@ -39,6 +50,15 @@ def metrics():
 def api_audit(payload: SystemTaskPayload):
     dossier = supervisor.process_task(payload)
     return dossier.to_dict()
+
+
+@app.post("/api/score")
+def api_score(req: ScoreRequest):
+    """Educational categorical TLICS/SLIC scoring; no case data is retained."""
+    try:
+        return score_case(**req.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/chat")
