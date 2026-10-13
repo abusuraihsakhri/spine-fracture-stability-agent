@@ -167,7 +167,7 @@ class SpineCoordinator:
         if "summary" in q or "status" in q:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent currently tracking {len(self.case_registry)} cases in local air-gapped memory."
         elif "guidelines" in q or "protocol" in q:
-            return "All sub-agents operate under validated consensus clinical algorithms and CAP/CLSI/NCCN/WHO standards."
+            return "Legacy numeric threshold checks are illustrative only, not validated clinical spine scoring. Use the categorical TLICS/SLIC calculator."
         else:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent executive agent online. Continuous supervisory monitoring active across all domain parameters."
 
