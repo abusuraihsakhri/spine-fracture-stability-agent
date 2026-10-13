@@ -5,7 +5,7 @@ from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from spine_fracture_stability_agent.scoring import score_case
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -34,7 +34,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "spine-fracture-stability-agent", "domain": "Radiology & Neuroimaging Systems", "standard": "ACR RADS / Fleischner Society / ASPECTS Guidelines", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "spine-fracture-stability-agent", "domain": "Radiology & Neuroimaging Systems", "standard": "Legacy generic thresholds; not a validated spine classification", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
@@ -48,7 +48,13 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
+    try:
+        dossier = supervisor.process_task(payload)
+    except SecurityException as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Input may contain an identifier; use synthetic data only.",
+        ) from exc
     return dossier.to_dict()
 
 
