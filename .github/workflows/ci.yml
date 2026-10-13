@@ -32,6 +32,9 @@ jobs:
         python -m compileall -q agents spine_fracture_stability_agent cli.py spine_stability.py enrichment.py
         pytest -q
 
+    - name: Test browser calculator
+      run: node tests/browser_ui.test.cjs
+
     - name: Security SAST & Zero-PHI Audit
       run: |
         python -c "
