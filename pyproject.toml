@@ -17,11 +17,15 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2,<3"]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.100,<1", "uvicorn>=0.20,<1"]
+dev = ["pytest>=7,<10", "httpx>=0.24,<1"]
 
 [project.scripts]
 spine-fracture-stability-engine = "spine_fracture_stability_agent.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/abusuraihsakhri/spine-fracture-stability-engine"
+Homepage = "https://github.com/abusuraihsakhri/spine-fracture-stability-agent"
 Repository = "https://github.com/abusuraihsakhri/spine-fracture-stability-engine.git"
