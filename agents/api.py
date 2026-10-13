@@ -4,7 +4,8 @@ FastAPI REST API Server for Spine Fracture Stability Agent.
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from spine_fracture_stability_agent.scoring import score_case
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -12,9 +13,19 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Spine Fracture Stability Agent API",
-    description="Enterprise Distributed Component Platform (Radiology & Neuroimaging Systems)",
+    description="Legacy generic threshold monitoring and reference-based TLICS/SLIC scoring",
     version="3.0.0-ENTERPRISE",
 )
+
+
+
+class ScoreRequest(BaseModel):
+    scale: str
+    morphology: str
+    ligament: str
+    neurologic: str
+    ongoing_compression: bool = False
+
 
 
 class ChatRequest(BaseModel):
@@ -23,7 +34,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "spine-fracture-stability-agent", "domain": "Radiology & Neuroimaging Systems", "standard": "ACR RADS / Fleischner Society / ASPECTS Guidelines", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "spine-fracture-stability-agent", "domain": "Radiology & Neuroimaging Systems", "standard": "Legacy generic thresholds; not a validated spine classification", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
@@ -37,8 +48,23 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
+    try:
+        dossier = supervisor.process_task(payload)
+    except SecurityException as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Input may contain an identifier; use synthetic data only.",
+        ) from exc
     return dossier.to_dict()
+
+
+@app.post("/api/score")
+def api_score(req: ScoreRequest):
+    """Educational categorical TLICS/SLIC scoring; no case data is retained."""
+    try:
+        return score_case(**req.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/chat")

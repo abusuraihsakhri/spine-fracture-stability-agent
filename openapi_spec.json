@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Spine Fracture Stability Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
+    "description": "Reference-based TLICS/SLIC scoring with legacy generic threshold monitoring. The authoritative API schema is generated at /openapi.json.",
     "version": "3.0.0-ENTERPRISE",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
@@ -25,14 +25,14 @@
         "summary": "Prometheus operational metrics",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "JSON operational counters, not Prometheus text format"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
+        "summary": "Legacy illustrative generic-threshold audit; not a clinical spine score",
         "requestBody": {
           "content": {
             "application/json": {
@@ -76,7 +76,7 @@
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Mock supervisory response; no model inference",
         "requestBody": {
           "content": {
             "application/json": {
@@ -107,6 +107,58 @@
         "responses": {
           "200": {
             "description": "Cryptographic audit trail"
+          }
+        }
+      }
+    },
+    "/api/score": {
+      "post": {
+        "summary": "Calculate one TLICS or SLIC categorical point score (educational use)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scale": {
+                    "type": "string",
+                    "enum": [
+                      "TLICS",
+                      "SLIC"
+                    ]
+                  },
+                  "morphology": {
+                    "type": "string"
+                  },
+                  "ligament": {
+                    "type": "string"
+                  },
+                  "neurologic": {
+                    "type": "string"
+                  },
+                  "ongoing_compression": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Optional SLIC only, with a neurologic deficit"
+                  }
+                },
+                "required": [
+                  "scale",
+                  "morphology",
+                  "ligament",
+                  "neurologic"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Points by component, total, interpretation, and reference"
+          },
+          "422": {
+            "description": "Missing or invalid input categories"
           }
         }
       }

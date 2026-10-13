@@ -2,6 +2,7 @@
 Command Line Interface for Spine Fracture Stability Agent.
 """
 import argparse
+from spine_fracture_stability_agent.scoring import score_case
 import csv
 import json
 import os
@@ -16,6 +17,15 @@ supervisor = SystemSupervisor(model_provider="mock")
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="spine-fracture-stability-agent", description="Spine Fracture Stability Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Reference-based injury classification (independent of legacy metric audit)
+    p_score = subparsers.add_parser("score", help="Calculate categorical TLICS or SLIC points")
+    p_score.add_argument("--scale", required=True, choices=["TLICS", "SLIC"])
+    p_score.add_argument("--morphology", required=True)
+    p_score.add_argument("--ligament", required=True)
+    p_score.add_argument("--neurologic", required=True)
+    p_score.add_argument("--ongoing-compression", action="store_true",
+                         help="SLIC only, with a neurologic deficit")
 
     # Audit
     p_audit = subparsers.add_parser("audit", help="Run single task evaluation")
@@ -44,6 +54,17 @@ def main(argv=None):
     p_serve.add_argument("--port", type=int, default=8000)
 
     args = parser.parse_args(argv)
+
+    if args.command == "score":
+        try:
+            result = score_case(
+                args.scale, args.morphology, args.ligament,
+                args.neurologic, args.ongoing_compression,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
+        print(json.dumps(result, indent=2))
+        return 0
 
     if args.command == "audit":
         payload = SystemTaskPayload(

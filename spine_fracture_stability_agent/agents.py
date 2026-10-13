@@ -1,5 +1,5 @@
 """
-Distributed Component Hierarchy & Executive Coordinator for SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent.
+Legacy generic threshold agents, retained for interface compatibility; not TLICS/SLIC scoring.
 Domain: Musculoskeletal Imaging
 """
 import uuid
@@ -105,6 +105,6 @@ class SpineCoordinator:
         if "status" in q or "summary" in q:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent currently tracking {len(self.case_registry)} cases in on-premises memory."
         elif "guideline" in q or "standard" in q:
-            return "Active clinical surveillance operates under TLICS & Subaxial Spine Injury Scale validated protocols."
+            return "The legacy threshold checks are not validated TLICS/SLIC calculations. Use the score command for categorical point scoring."
         else:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent executive agent online. Zero-PHI air-gapped monitoring active."

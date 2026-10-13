@@ -9,8 +9,9 @@ coordinator = SpineCoordinator()
 
 def create_app():
     try:
-        from fastapi import FastAPI
+        from fastapi import FastAPI, HTTPException
         from pydantic import BaseModel
+        from .scoring import score_case
 
         app = FastAPI(
             title="SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent",
@@ -27,6 +28,13 @@ def create_app():
             is_stat: bool = True
             clinical_notes: str = ""
             biomarkers: Dict[str, Any] = {}
+
+        class ScoreRequest(BaseModel):
+            scale: str
+            morphology: str
+            ligament: str
+            neurologic: str
+            ongoing_compression: bool = False
 
         class ChatRequest(BaseModel):
             query: str
@@ -48,6 +56,13 @@ def create_app():
                 biomarkers=req.biomarkers,
             )
             return coordinator.process_case(payload)
+
+        @app.post("/api/score")
+        def api_score(req: ScoreRequest):
+            try:
+                return score_case(**req.model_dump())
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
 
         @app.post("/api/chat")
         def api_chat(req: ChatRequest):

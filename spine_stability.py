@@ -89,7 +89,8 @@ class LigamentousIntegrityAgent:
     """Specialized Sub-Agent 2 for spine-fracture-stability-agent"""
     def evaluate(self, payload: Dict[str, Any]) -> List[AgentAlert]:
         alerts = []
-        is_critical = bool(payload.get("critical_flag", False))
+        flag = payload.get("critical_flag", False)
+        is_critical = flag if isinstance(flag, bool) else str(flag).strip().lower() in ("true", "1", "yes")
         val2 = float(payload.get("metric_secondary", 5.0))
         if is_critical or val2 > 12.0:
             alerts.append(
@@ -166,7 +167,7 @@ class SpineCoordinator:
         if "summary" in q or "status" in q:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent currently tracking {len(self.case_registry)} cases in local air-gapped memory."
         elif "guidelines" in q or "protocol" in q:
-            return "All sub-agents operate under validated consensus clinical algorithms and CAP/CLSI/NCCN/WHO standards."
+            return "Legacy numeric threshold checks are illustrative, not validated clinical guidelines. Use the categorical TLICS/SLIC calculator."
         else:
             return f"SpineStability Sentinel: TLICS & Subaxial Cervical Spine Injury Staging Agent executive agent online. Continuous supervisory monitoring active across all domain parameters."
 
