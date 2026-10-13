@@ -13,7 +13,7 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Spine Fracture Stability Agent API",
-    description="Enterprise Distributed Component Platform (Radiology & Neuroimaging Systems)",
+    description="Legacy generic threshold monitoring and reference-based TLICS/SLIC scoring",
     version="3.0.0-ENTERPRISE",
 )
 
